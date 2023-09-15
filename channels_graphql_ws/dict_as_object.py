@@ -41,7 +41,10 @@ class DictAsObject:
         try:
             return self._scope[name]
         except KeyError as ex:
-            raise AttributeError() from ex
+            try:
+                return self._scope["channels_scope"][name]
+            except:
+                raise AttributeError() from ex
 
     def __setattr__(self, name, value):
         """Route attributes to the scope object."""
