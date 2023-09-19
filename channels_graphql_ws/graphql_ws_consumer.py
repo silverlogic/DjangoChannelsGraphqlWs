@@ -1230,6 +1230,7 @@ class GraphqlWsConsumer(ch_websocket.AsyncJsonWebsocketConsumer):
         context = DictAsObject({})
         context.channels_scope = self.scope
         context.channel_name = self.channel_name
+        context.build_meta()
         return context
 
     @property
