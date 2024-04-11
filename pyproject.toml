@@ -33,7 +33,7 @@ build-backend = "poetry.core.masonry.api"
 # Python packaging and dependency management.
 # Docs: https://python-poetry.org/docs/
 [tool.poetry]
-name = "django-channels-graphql-ws"
+name = "baseapp-django-channels-graphql-ws"
 version = "v1.0.0rc9"
 description = """Django Channels based WebSocket GraphQL server with Graphene-like subscriptions"""
 authors = ["Alexander A. Prokhorov <alexander.prokhorov@datadvance.net>"]
