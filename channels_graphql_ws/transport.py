@@ -93,10 +93,13 @@ class GraphqlWsTransportAiohttp(GraphqlWsTransport):
                 "graphql-ws". By default set to "graphql-transport-ws".
 
         """
-        assert subprotocol in (
+        if subprotocol not in (
             "graphql-transport-ws",
             "graphql-ws",
-        ), "Transport only supports graphql-transport-ws and graphql-ws subprotocols!"
+        ):
+            raise ValueError(
+                "Transport only supports graphql-transport-ws and graphql-ws subprotocols!"
+            )
         connected = asyncio.Event()
         self._message_processor = asyncio.create_task(
             self._process_messages(connected, timeout or self.TIMEOUT, subprotocol)
@@ -109,6 +112,10 @@ class GraphqlWsTransportAiohttp(GraphqlWsTransport):
             )
         finally:
             connected_task.cancel()
+            try:
+                await connected_task
+            except asyncio.CancelledError:
+                pass
         if self._message_processor.done():
             # Make sure to raise an exception from the task.
             self._message_processor.result()

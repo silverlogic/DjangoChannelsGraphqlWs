@@ -90,7 +90,7 @@
     "isort.args": ["--virtual-env", "${workspaceFolder}/.venv"],
     "python.linting.banditEnabled": false,
     "python.linting.mypyEnabled": true,
-    "python.linting.pydocstyleEnabled": true,
+    "python.linting.pydocstyleEnabled": false,
     "python.linting.pylintEnabled": true,
     "python.linting.pylintUseMinimalCheckers": false,
     "python.testing.autoTestDiscoverOnSaveEnabled": true,

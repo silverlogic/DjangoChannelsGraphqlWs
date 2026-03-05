@@ -240,7 +240,7 @@ def graphiql(request):
 urlpatterns = [
     django.urls.path("", graphiql),
     # `GraphQLView` used to handle mutations and queries requests
-    # sended by http.
+    # sent over HTTP.
     django.urls.path(
         "graphql/",
         graphene_django.views.GraphQLView.as_view(

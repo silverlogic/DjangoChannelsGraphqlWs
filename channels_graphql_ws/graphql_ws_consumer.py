@@ -91,11 +91,11 @@ class GraphqlWsConsumer(ch_websocket.AsyncJsonWebsocketConsumer):
     connection to a single client.
 
     This class implements the WebSocket-based GraphQL protocol used by
-    `graphql-ws` library (used by Apollo):
-    https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md
-    We also support the previously used but not recommended by Apollo
-    `graphql-transport-ws` subprotocol:
-    https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md
+    `graphql-transport-ws` (the modern one, documented at
+    https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md).
+    We also support the older `graphql-ws` subprotocol (Apollo's legacy
+    `subscriptions-transport-ws` protocol, documented at
+    https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md).
     """
 
     # ----------------------------------------------------------------- PUBLIC INTERFACE
@@ -287,13 +287,15 @@ class GraphqlWsConsumer(ch_websocket.AsyncJsonWebsocketConsumer):
 
         # Check the subprotocol told by the client.
         #
-        # NOTE: In Python 3.6 `scope["subprotocols"]` was a string, but
-        # starting with Python 3.7 it is a bytes. This can be a proper
-        # change or just a bug in the Channels to be fixed. So let's
-        # accept both variants until it becomes clear.
+        # NOTE: In some environments `scope["subprotocols"]` may be a
+        # plain `str` or `bytes` instead of a list. Normalize to a list
+        # so the list-comprehension below always works correctly.
+        raw_subprotocols = self.scope["subprotocols"]
+        if isinstance(raw_subprotocols, (bytes, str)):
+            raw_subprotocols = [raw_subprotocols]
         client_subprotocols = [
             (sp.decode() if isinstance(sp, bytes) else sp)
-            for sp in self.scope["subprotocols"]
+            for sp in raw_subprotocols
         ]
 
         if "graphql-transport-ws" in client_subprotocols:

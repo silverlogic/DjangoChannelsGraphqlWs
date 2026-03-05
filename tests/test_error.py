@@ -247,7 +247,7 @@ async def test_subscriber_already_exists_error_graphql_transport_ws(gql):
     for _ in range(2):
         await client.start(
             query="""
-                    subscription { test_subscription (switch: "NONE\") { ok } }
+                    subscription { test_subscription (switch: "NONE") { ok } }
                     """,
             msg_id="NOT_UNIQUE_ID",
         )
@@ -316,7 +316,7 @@ async def test_subscribe_return_value(gql, subprotocol):
         await client.connect_and_init()
         await client.start(
             query=f"""
-                subscription {{ test_subscription (switch: "{result_type}\") {{ ok }} }}
+                subscription {{ test_subscription (switch: "{result_type}") {{ ok }} }}
                 """
         )
         await client.assert_no_messages("Subscribe responded with a message!")

@@ -72,10 +72,13 @@ class GraphqlWsClient:
         ), "Given transport does not implement the 'GraphqlWsTransport' interface!"
         self._transport = transport
         self._is_connected = False
-        assert subprotocol in (
+        if subprotocol not in (
             "graphql-transport-ws",
             "graphql-ws",
-        ), "Client supports only graphql-transport-ws and graphql-ws subprotocols!"
+        ):
+            raise ValueError(
+                "Client supports only graphql-transport-ws and graphql-ws subprotocols!"
+            )
         self._subprotocol = subprotocol
 
     @property

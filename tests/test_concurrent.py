@@ -341,10 +341,12 @@ async def test_subscribe_and_many_unsubscribes(
             if resp["type"] == "complete":
                 op_ids.remove(op_id)
             else:
+                expected_type = (
+                    "next" if subprotocol == "graphql-transport-ws" else "data"
+                )
                 assert (
-                    resp["type"] == "next"
-                    if subprotocol == "graphql-transport-ws"
-                    else "data" and resp["payload"]["data"] is None
+                    resp["type"] == expected_type
+                    and resp["payload"]["data"] is None
                 ), (
                     "This should be a successful subscription message, not '%s'",
                     resp,
@@ -496,10 +498,9 @@ async def test_message_order_in_subscribe_unsubscribe_loop(
 
         resp = await client.receive(raw_response=True)
         assert sub_id == resp["id"]
+        expected_type = "next" if subprotocol == "graphql-transport-ws" else "data"
         assert (
-            resp["type"] == "next"
-            if subprotocol == "graphql-transport-ws"
-            else "data" and resp["payload"]["data"] is None
+            resp["type"] == expected_type and resp["payload"]["data"] is None
         ), "First we expect to get a confirmation message!"
 
         resp = await client.receive(raw_response=True)
@@ -777,10 +778,9 @@ async def test_message_order_in_subscribe_unsubscribe_all_loop(
 
         resp = await client.receive(raw_response=True)
         assert sub_id == resp["id"]
+        expected_type = "next" if subprotocol == "graphql-transport-ws" else "data"
         assert (
-            resp["type"] == "next"
-            if subprotocol == "graphql-transport-ws"
-            else "data" and resp["payload"]["data"] is None
+            resp["type"] == expected_type and resp["payload"]["data"] is None
         ), "First we expect to get a confirmation message!"
 
         resp = await client.receive(raw_response=True)
