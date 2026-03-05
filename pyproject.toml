@@ -80,7 +80,7 @@ tox = "*"
 # Black - the uncompromising code formatter.
 # https://black.readthedocs.io/en/stable/index.html
 [tool.black]
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py310', 'py311', 'py312']
 
 # ---------------------------------------------------------------- ISORT
 # Isort configuration.
@@ -166,7 +166,7 @@ omit = ["**/test_*.py"]
 legacy_tox_ini = """
 [tox]
 isolated_build = true
-envlist = py38,py39,py310
+envlist = py310,py311,py312
 [testenv]
 allowlist_externals = poetry
 commands_pre = poetry install -v
