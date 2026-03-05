@@ -345,8 +345,7 @@ async def test_subscribe_and_many_unsubscribes(
                     "next" if subprotocol == "graphql-transport-ws" else "data"
                 )
                 assert (
-                    resp["type"] == expected_type
-                    and resp["payload"]["data"] is None
+                    resp["type"] == expected_type and resp["payload"]["data"] is None
                 ), (
                     "This should be a successful subscription message, not '%s'",
                     resp,
@@ -609,15 +608,13 @@ async def test_message_order_in_broadcast_unsubscribe_loop(
         )
 
         spam_payload = {
-            "query": textwrap.dedent(
-                f"""
+            "query": textwrap.dedent(f"""
                 mutation op_name($message: String!, $user_id: UserId) {{
                     {mutation}(message: $message, user_id: $user_id) {{
                         message
                     }}
                 }}
-                """
-            ),
+                """),
             "variables": {
                 "message": "__SPAM_SPAM_SPAM_SPAM_SPAM_SPAM__",
                 "user_id": "ALICE",

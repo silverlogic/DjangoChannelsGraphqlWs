@@ -21,7 +21,6 @@
 
 """GraphQL client."""
 
-
 import asyncio
 import textwrap
 import time

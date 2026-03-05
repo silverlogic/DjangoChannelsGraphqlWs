@@ -294,8 +294,7 @@ class GraphqlWsConsumer(ch_websocket.AsyncJsonWebsocketConsumer):
         if isinstance(raw_subprotocols, (bytes, str)):
             raw_subprotocols = [raw_subprotocols]
         client_subprotocols = [
-            (sp.decode() if isinstance(sp, bytes) else sp)
-            for sp in raw_subprotocols
+            (sp.decode() if isinstance(sp, bytes) else sp) for sp in raw_subprotocols
         ]
 
         if "graphql-transport-ws" in client_subprotocols:

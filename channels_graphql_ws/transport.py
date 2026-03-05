@@ -35,7 +35,9 @@ class GraphqlWsTransport:
     # Default timeout for the WebSocket messages.
     TIMEOUT: float = 60.0
 
-    async def connect(self, timeout: Optional[float] = None) -> None:
+    async def connect(
+        self, timeout: Optional[float] = None, subprotocol: Optional[str] = None
+    ) -> None:
         """Connect to the server."""
         raise NotImplementedError()
 
@@ -98,7 +100,8 @@ class GraphqlWsTransportAiohttp(GraphqlWsTransport):
             "graphql-ws",
         ):
             raise ValueError(
-                "Transport only supports graphql-transport-ws and graphql-ws subprotocols!"
+                "Transport only supports graphql-transport-ws"
+                " and graphql-ws subprotocols!"
             )
         connected = asyncio.Event()
         self._message_processor = asyncio.create_task(

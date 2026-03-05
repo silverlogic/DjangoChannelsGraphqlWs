@@ -20,6 +20,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """Dict wrapper to access keys as attributes."""
+
 from urllib.parse import urljoin, urlsplit
 
 from django.conf import settings

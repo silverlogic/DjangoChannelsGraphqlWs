@@ -160,6 +160,8 @@ class GraphqlWsTransport(channels_graphql_ws.transport.GraphqlWsTransport):
 
     async def connect(self, timeout: Optional[float] = None, subprotocol=None) -> None:
         """Connect to the server."""
+        # The subprotocol is already baked into the communicator at construction.
+        # pylint: disable=unused-argument
         ok, code = await self._comm.connect(timeout or self.TIMEOUT)
         if not ok:
             raise RuntimeError(
