@@ -88,16 +88,17 @@ class GraphqlWsClient:
         """Indicate whether client is connected."""
         return self._is_connected
 
-    async def connect_and_init(self) -> None:
+    async def connect_and_init(self, connect_only: bool = False, payload="") -> None:
         """Establish and initialize WebSocket GraphQL connection.
 
         1. Establish WebSocket connection.
-        2. Initialize GraphQL connection.
+        2. Initialize GraphQL connection. Skipped if connect_only=True.
         """
         await self._transport.connect()
-        await self._transport.send({"type": "connection_init", "payload": ""})
-        resp = await self._transport.receive()
-        assert resp["type"] == "connection_ack", f"Unexpected response `{resp}`!"
+        if not connect_only:
+            await self._transport.send({"type": "connection_init", "payload": payload})
+            resp = await self._transport.receive()
+            assert resp["type"] == "connection_ack", f"Unexpected response `{resp}`!"
         self._is_connected = True
 
     # Default value for `id`, because `None` is also a valid value.
