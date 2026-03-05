@@ -127,13 +127,15 @@ async def test_models_serialization_with_nested_db_query(
 
     print("Subscribe to receive subscription notifications.")
 
-    sub_id = await client.start(query="""
+    sub_id = await client.start(
+        query="""
                 subscription {
                     on_models_received {
                         user { id, username }
                     }
                 }
-                """)
+                """
+    )
 
     print("Invoke mutation which sends Django model to the subscription.")
 
@@ -231,7 +233,8 @@ async def test_models_serialization(gql, transactional_db, subprotocol):
 
     print("Subscribe to receive subscription notifications.")
 
-    sub_id = await client.start(query="""
+    sub_id = await client.start(
+        query="""
                 subscription {
                     on_models_received {
                         user1_id
@@ -242,7 +245,8 @@ async def test_models_serialization(gql, transactional_db, subprotocol):
                         user2_typename
                     }
                 }
-                """)
+                """
+    )
 
     print("Invoke mutation which sends Django model to the subscription.")
 
@@ -343,7 +347,8 @@ async def test_timestamps_serialization(gql, transactional_db, subprotocol):
 
     print("Subscribe to receive subscription notifications.")
 
-    sub_id = await client.start(query="""
+    sub_id = await client.start(
+        query="""
                 subscription {
                     on_timestamps_received {
                         now_date
@@ -354,7 +359,8 @@ async def test_timestamps_serialization(gql, transactional_db, subprotocol):
                         now_time_typename
                     }
                 }
-                """)
+                """
+    )
 
     print("Invoke mutation which sends timestamps to the subscription.")
 

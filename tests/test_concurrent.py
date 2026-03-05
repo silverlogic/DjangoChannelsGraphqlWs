@@ -608,13 +608,15 @@ async def test_message_order_in_broadcast_unsubscribe_loop(
         )
 
         spam_payload = {
-            "query": textwrap.dedent(f"""
+            "query": textwrap.dedent(
+                f"""
                 mutation op_name($message: String!, $user_id: UserId) {{
                     {mutation}(message: $message, user_id: $user_id) {{
                         message
                     }}
                 }}
-                """),
+                """
+            ),
             "variables": {
                 "message": "__SPAM_SPAM_SPAM_SPAM_SPAM_SPAM__",
                 "user_id": "ALICE",
