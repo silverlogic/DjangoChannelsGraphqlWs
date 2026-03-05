@@ -66,7 +66,7 @@ class GraphqlWsClient(channels_graphql_ws.client.GraphqlWsClient):
                     else f"Message received when nothing expected!\n{received}"
                 )
 
-    async def connect_and_init(self, connect_only: bool = False) -> None:
+    async def connect_and_init(self, connect_only: bool = False, payload="") -> None:
         """Establish and initialize WebSocket GraphQL connection.
 
         1. Establish WebSocket connection.
@@ -76,7 +76,7 @@ class GraphqlWsClient(channels_graphql_ws.client.GraphqlWsClient):
             await self._transport.connect()
             self._is_connected = True
         else:
-            await super().connect_and_init()
+            await super().connect_and_init(payload=payload)
 
     async def send_raw_message(self, message):
         """Send a raw message.

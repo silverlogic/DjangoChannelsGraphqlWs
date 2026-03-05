@@ -114,10 +114,12 @@ async def test_heavy_load(gql, sync_resolvers, requests_number, subprotocol):
     for _ in range(requests_number):
         op_id = uuid.uuid4().hex
         send_waitlist += [
-            client.start(
-                msg_id=op_id,
-                query=f"query op_name {{ {query} }}",
-                operation_name="op_name",
+            asyncio.create_task(
+                client.start(
+                    msg_id=op_id,
+                    query=f"query op_name {{ {query} }}",
+                    operation_name="op_name",
+                )
             )
         ]
         # Expect two messages for each one we have sent.
@@ -125,7 +127,10 @@ async def test_heavy_load(gql, sync_resolvers, requests_number, subprotocol):
             (op_id, "next" if subprotocol == "graphql-transport-ws" else "data")
         )
         expected_responses.add((op_id, "complete"))
-        receive_waitlist += [client.transport.receive(), client.transport.receive()]
+        receive_waitlist += [
+            asyncio.create_task(client.transport.receive()),
+            asyncio.create_task(client.transport.receive()),
+        ]
 
     start_ts = time.monotonic()
     await asyncio.wait(send_waitlist)
@@ -362,13 +367,15 @@ async def test_subscribe_and_many_unsubscribes(
     op_ids: Set[str] = set()
     # List to collect tasks. We immediately add a handler to receive
     # successful messages.
-    awaitables = [receiver(op_ids)]
+    awaitables = [asyncio.create_task(receiver(op_ids))]
 
     op_id = 0
     for user_id in itertools.cycle(["ALICE", "TOM", None]):
         op_id += 1
         op_ids.add(str(op_id))
-        awaitables.append(subscribe_unsubscribe(client, user_id, str(op_id)))
+        awaitables.append(
+            asyncio.create_task(subscribe_unsubscribe(client, user_id, str(op_id)))
+        )
         if number_of_tasks == op_id:
             print("Tasks with the following ids prepared:", op_ids)
             break

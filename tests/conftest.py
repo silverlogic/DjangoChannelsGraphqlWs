@@ -35,27 +35,21 @@ import channels_graphql_ws
 import channels_graphql_ws.testing
 
 
-@pytest.fixture
-def event_loop(request):
-    """Overwrite `pytest_asyncio` eventloop to fix Windows issue.
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    """Return the asyncio event loop policy for tests.
 
-    Default implementation causes `NotImplementedError` on Windows with
-    Python 3.8, because they changed default eventloop in 3.8.
+    On Windows with Python 3.8+, use WindowsSelectorEventLoopPolicy to avoid
+    NotImplementedError: the default ProactorEventLoop is incompatible with
+    some libraries. On other platforms return the default policy.
 
     NOTE: We do the same thing in the `example/settings.py` because it
     imports (and fails) before we have a chance to invoke this fixture.
-    So, we could avoid adding this fixture, but I feel it is better to
-    keep the proper solution here as well.
 
     """
-    del request
-    if sys.platform == "win32" and sys.version_info.minor >= 8:
-        asyncio.set_event_loop_policy(
-            asyncio.WindowsSelectorEventLoopPolicy()  # pylint: disable=no-member
-        )
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+    if sys.platform == "win32":
+        return asyncio.WindowsSelectorEventLoopPolicy()  # pylint: disable=no-member
+    return asyncio.DefaultEventLoopPolicy()
 
 
 class DummyQuery(graphene.ObjectType):

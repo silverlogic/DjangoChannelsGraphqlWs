@@ -21,11 +21,12 @@
 
 """Dict wrapper to access keys as attributes."""
 from urllib.parse import urljoin, urlsplit
-from django.utils.encoding import escape_uri_path, iri_to_uri
-from django.utils.functional import cached_property
+
 from django.conf import settings
 from django.core.exceptions import DisallowedHost
 from django.http.request import split_domain_port, validate_host
+from django.utils.encoding import escape_uri_path, iri_to_uri
+from django.utils.functional import cached_property
 
 
 class DictAsObject:
@@ -89,9 +90,11 @@ class DictAsObject:
     def build_meta(self):
         """Build META dict from headers."""
         META = {}
-        for key, value in self.channels_scope.get('headers', []):
+        for key, value in self.channels_scope.get("headers", []):
             META[key.decode("utf-8").replace("-", "_").upper()] = value.decode("utf-8")
-        META['QUERY_STRING'] = self.channels_scope.get('query_string', b'').decode("utf-8")
+        META["QUERY_STRING"] = self.channels_scope.get("query_string", b"").decode(
+            "utf-8"
+        )
         self.META = META
 
     def build_absolute_uri(self, location=None):
@@ -143,9 +146,11 @@ class DictAsObject:
         return "%s%s%s" % (
             escape_uri_path(path),
             "/" if force_append_slash and not path.endswith("/") else "",
-            ("?" + iri_to_uri(self.META.get("QUERY_STRING", "")))
-            if self.META.get("QUERY_STRING", "")
-            else "",
+            (
+                ("?" + iri_to_uri(self.META.get("QUERY_STRING", "")))
+                if self.META.get("QUERY_STRING", "")
+                else ""
+            ),
         )
 
     def is_secure(self):
@@ -154,7 +159,9 @@ class DictAsObject:
 
     @cached_property
     def _current_scheme_host(self):
-        return "{}://{}".format("https" if self.is_secure() else "http", self.get_host())
+        return "{}://{}".format(
+            "https" if self.is_secure() else "http", self.get_host()
+        )
 
     def get_host(self):
         """Return the HTTP host using the environment or request headers."""
