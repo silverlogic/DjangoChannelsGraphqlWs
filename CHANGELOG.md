@@ -23,6 +23,17 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Changelog
 
+## [Unreleased]
+
+- Rebased with upstream `datadvance/DjangoChannelsGraphqlWs` (commit `1ade107`).
+- Updated GitHub Actions CI: Python matrix bumped to 3.10 / 3.11 / 3.12;
+  `actions/checkout` and `actions/setup-python` upgraded from v2 to v4;
+  macOS runner added to test matrix.
+- Fixed Python 3.10+ asyncio incompatibilities (event loop handling,
+  `asyncio.wait` coroutine usage).
+- Fixed vulnerable `aiohttp` and `django` versions in `poetry.lock`.
+- Post-rebase linting/formatting fixes (mypy, pylint, black 24.4.2).
+
 ## [1.0.0rc9] - 2024-04-11
 
 - Package renamed to `baseapp-django-channels-graphql-ws` for PyPI distribution.
