@@ -20,12 +20,14 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """Dict wrapper to access keys as attributes."""
+
 from urllib.parse import urljoin, urlsplit
-from django.utils.encoding import escape_uri_path, iri_to_uri
-from django.utils.functional import cached_property
+
 from django.conf import settings
 from django.core.exceptions import DisallowedHost
 from django.http.request import split_domain_port, validate_host
+from django.utils.encoding import escape_uri_path, iri_to_uri
+from django.utils.functional import cached_property
 
 
 class DictAsObject:
@@ -34,6 +36,7 @@ class DictAsObject:
     def __init__(self, scope):
         """Remember given `scope`."""
         self._scope = scope
+        self.META = {}
 
     def _asdict(self):
         """Provide inner Channels scope object."""
@@ -84,15 +87,18 @@ class DictAsObject:
         return self._scope.__repr__()
 
     # ---------------------------- build_absolute_uri
-    # copy from django.http.request.HttpRequest so we can have build_absolute_uri on channels scope
+    # Copy from django.http.request.HttpRequest so we can have
+    # build_absolute_uri on channels scope.
 
     def build_meta(self):
         """Build META dict from headers."""
-        META = {}
-        for key, value in self.channels_scope.get('headers', []):
-            META[key.decode("utf-8").replace("-", "_").upper()] = value.decode("utf-8")
-        META['QUERY_STRING'] = self.channels_scope.get('query_string', b'').decode("utf-8")
-        self.META = META
+        meta = {}
+        for key, value in self.channels_scope.get("headers", []):
+            meta[key.decode("utf-8").replace("-", "_").upper()] = value.decode("utf-8")
+        meta["QUERY_STRING"] = self.channels_scope.get("query_string", b"").decode(
+            "utf-8"
+        )
+        self.META = meta
 
     def build_absolute_uri(self, location=None):
         """
@@ -106,7 +112,7 @@ class DictAsObject:
         if location is None:
             # Make it an absolute url (but schemeless and domainless) for the
             # edge case that the path starts with '//'.
-            location = "//%s" % self.get_full_path()
+            location = f"//{self.get_full_path()}"
         else:
             # Coerce lazy locations.
             location = str(location)
@@ -134,25 +140,29 @@ class DictAsObject:
         return iri_to_uri(location)
 
     def get_full_path(self, force_append_slash=False):
+        """Return the full path including query string."""
         return self._get_full_path(self.path, force_append_slash)
 
     def _get_full_path(self, path, force_append_slash):
-        # RFC 3986 requires query string arguments to be in the ASCII range.
-        # Rather than crash if this doesn't happen, we encode defensively.
-        return "%s%s%s" % (
-            escape_uri_path(path),
-            "/" if force_append_slash and not path.endswith("/") else "",
-            ("?" + iri_to_uri(self.META.get("QUERY_STRING", "")))
-            if self.META.get("QUERY_STRING", "")
-            else "",
-        )
+        """Build the full path including optional slash and query string.
+
+        RFC 3986 requires query string arguments to be in the ASCII range.
+        Rather than crash if this doesn't happen, we encode defensively.
+        """
+        query_string = self.META.get("QUERY_STRING", "")
+        slash = "/" if force_append_slash and not path.endswith("/") else ""
+        qs = f"?{iri_to_uri(query_string)}" if query_string else ""
+        return f"{escape_uri_path(path)}{slash}{qs}"
 
     def is_secure(self):
+        """Return True if the request is secure (HTTPS)."""
         return not settings.DEBUG
 
     @cached_property
     def _current_scheme_host(self):
-        return "{}://{}".format("https" if self.is_secure() else "http", self.get_host())
+        """Return the current scheme and host as a string."""
+        scheme = "https" if self.is_secure() else "http"
+        return f"{scheme}://{self.get_host()}"
 
     def get_host(self):
         """Return the HTTP host using the environment or request headers."""
@@ -163,18 +173,15 @@ class DictAsObject:
         if settings.DEBUG and not allowed_hosts:
             allowed_hosts = [".localhost", "127.0.0.1", "[::1]"]
 
-        domain, port = split_domain_port(host)
+        domain, _ = split_domain_port(host)
         if domain and validate_host(domain, allowed_hosts):
             return host
+        msg = f"Invalid HTTP_HOST header: {host!r}."
+        if domain:
+            msg += f" You may need to add {domain!r} to ALLOWED_HOSTS."
         else:
-            msg = "Invalid HTTP_HOST header: %r." % host
-            if domain:
-                msg += " You may need to add %r to ALLOWED_HOSTS." % domain
-            else:
-                msg += (
-                    " The domain name provided is not valid according to RFC 1034/1035."
-                )
-            raise DisallowedHost(msg)
+            msg += " The domain name provided is not valid according to RFC 1034/1035."
+        raise DisallowedHost(msg)
 
     def _get_raw_host(self):
         """
