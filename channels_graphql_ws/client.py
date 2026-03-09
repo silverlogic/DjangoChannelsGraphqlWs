@@ -239,6 +239,35 @@ class GraphqlWsClient:
         await self._transport.send(message)
         return msg_id
 
+    async def send(self, *, msg_type, payload, op_id=AUTO):
+        """Send a raw GraphQL operation message (subscribe/start/etc.).
+
+        Backward-compatible helper that lets callers build and send an
+        operation message directly without going through the higher-level
+        `start()` / `subscribe()` helpers.  The message is always sent
+        with an ``"id"`` field because this method is intended for
+        operation messages (``subscribe``, ``start``, ...) which require
+        one; it is not suitable for connection-level messages such as
+        ``connection_init``.
+
+        Args:
+            msg_type: The ``type`` field of the GraphQL WS message,
+                e.g. ``"subscribe"`` (graphql-transport-ws) or
+                ``"start"`` (graphql-ws).
+            payload: The ``payload`` field of the message.
+            op_id: The operation identifier. Auto-generated when not
+                supplied.
+
+        Returns:
+            The operation identifier that was used.
+
+        """
+        if op_id is self.AUTO:
+            op_id = str(uuid.uuid4().hex)
+        message = {"type": msg_type, "payload": payload, "id": op_id}
+        await self._transport.send(message)
+        return op_id
+
     async def complete(self, op_id):
         """Complete GraphQL request.
 

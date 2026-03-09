@@ -180,14 +180,13 @@ class Subscription(graphene.ObjectType):
 
         """
         try:
-            event_loop = asyncio.get_event_loop()
+            asyncio.get_running_loop()
         except RuntimeError:
             pass
         else:
-            if event_loop.is_running():
-                return event_loop.create_task(
-                    cls.broadcast_async(group=group, payload=payload)
-                )
+            return asyncio.create_task(
+                cls.broadcast_async(group=group, payload=payload)
+            )
 
         return cls.broadcast_sync(group=group, payload=payload)
 
@@ -248,12 +247,11 @@ class Subscription(graphene.ObjectType):
                 subscription will be unsubscribed.
         """
         try:
-            event_loop = asyncio.get_event_loop()
+            asyncio.get_running_loop()
         except RuntimeError:
             pass
         else:
-            if event_loop.is_running():
-                return asyncio.create_task(cls.unsubscribe_async(group=group))
+            return asyncio.create_task(cls.unsubscribe_async(group=group))
 
         return cls.unsubscribe_sync(group=group)
 
