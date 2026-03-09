@@ -317,6 +317,74 @@ async def test_subscription_groups(gql, subprotocol):
 
 
 @pytest.mark.asyncio
+async def test_send_method(gql):
+    """Test the low-level ``send`` method on the GraphQL client.
+
+    Verify that ``client.send(msg_type, payload)`` works as an
+    alternative to ``client.start`` - it should send a message with
+    the given type and payload and return the generated message id.
+    """
+    subprotocol = "graphql-transport-ws"
+
+    print("Establish & initialize WebSocket GraphQL connection.")
+    client = gql(
+        query=Query,
+        mutation=Mutation,
+        subscription=Subscription,
+        consumer_attrs={"strict_ordering": True},
+        subprotocol=subprotocol,
+    )
+    await client.connect_and_init()
+
+    print("Subscribe using the low-level send method.")
+    sub_id = await client.send(
+        msg_type="subscribe",
+        payload={
+            "query": """
+                subscription op_name {
+                    on_chat_message_sent(user_id: ALICE) { event }
+                }
+                """,
+            "operationName": "op_name",
+        },
+    )
+    assert sub_id is not None, "send() should return a message id"
+
+    await client.assert_no_messages()
+
+    print("Trigger the subscription by mutation.")
+    message = f"Hi via send! {str(uuid.uuid4().hex)}"
+    msg_id = await client.start(
+        query="""
+                mutation op_name($message: String!) {
+                    send_chat_message(message: $message) {
+                        message
+                    }
+                }
+                """,
+        variables={"message": message},
+        operation_name="op_name",
+    )
+
+    # Mutation response.
+    resp = await client.receive_next(msg_id)
+    assert resp["data"] == {"send_chat_message": {"message": message}}
+    await client.receive_complete(msg_id)
+
+    print("Check subscription notification was received using receive with assert_id.")
+    resp = await client.receive(assert_id=sub_id, assert_type="next")
+    event = resp["data"]["on_chat_message_sent"]["event"]
+    assert json.loads(event) == {
+        # pylint: disable=no-member
+        "user_id": UserId.ALICE.value,  # type: ignore[attr-defined]
+        "payload": message,
+    }, "Subscription notification contains wrong data!"
+
+    print("Disconnect and wait the application to finish gracefully.")
+    await client.finalize()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("subprotocol", ["graphql-transport-ws", "graphql-ws"])
 async def test_ping(gql, subprotocol):
     """Test that server sends ping(keepalive) messages."""
