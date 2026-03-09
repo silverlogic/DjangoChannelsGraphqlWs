@@ -317,6 +317,80 @@ async def test_subscription_groups(gql, subprotocol):
 
 
 @pytest.mark.asyncio
+async def test_send_method_auto_connects(gql):
+    """Test that ``send`` auto-connects when the client is not yet connected.
+
+    When a test (or caller) uses ``client.send(...)`` without calling
+    ``connect_and_init()`` first, the connection must be established
+    and initialized transparently so that the server's subprotocol
+    detection runs before the first application-level message arrives.
+
+    This reproduces the pattern used by baseapp-backend's anonymous
+    subscription tests which create a client via the ``graphql_websocket``
+    fixture and call ``send()`` directly.
+    """
+    subprotocol = "graphql-transport-ws"
+
+    print("Create client but DO NOT call connect_and_init.")
+    client = gql(
+        query=Query,
+        mutation=Mutation,
+        subscription=Subscription,
+        consumer_attrs={"strict_ordering": True},
+        subprotocol=subprotocol,
+    )
+    assert not client.connected, "Client should not be connected yet"
+
+    print("send() should auto-connect and then subscribe.")
+    sub_id = await client.send(
+        msg_type="subscribe",
+        payload={
+            "query": """
+                subscription op_name {
+                    on_chat_message_sent(user_id: ALICE) { event }
+                }
+                """,
+            "operationName": "op_name",
+        },
+    )
+    assert sub_id is not None, "send() should return a message id"
+    assert client.connected, "Client should be connected after send()"
+
+    await client.assert_no_messages()
+
+    print("Trigger the subscription by mutation.")
+    message = f"Hi auto-connect! {str(uuid.uuid4().hex)}"
+    msg_id = await client.start(
+        query="""
+                mutation op_name($message: String!) {
+                    send_chat_message(message: $message) {
+                        message
+                    }
+                }
+                """,
+        variables={"message": message},
+        operation_name="op_name",
+    )
+
+    # Mutation response.
+    resp = await client.receive_next(msg_id)
+    assert resp["data"] == {"send_chat_message": {"message": message}}
+    await client.receive_complete(msg_id)
+
+    print("Check subscription notification was received.")
+    resp = await client.receive(assert_id=sub_id, assert_type="next")
+    event = resp["data"]["on_chat_message_sent"]["event"]
+    assert json.loads(event) == {
+        # pylint: disable=no-member
+        "user_id": UserId.ALICE.value,  # type: ignore[attr-defined]
+        "payload": message,
+    }, "Subscription notification contains wrong data!"
+
+    print("Disconnect and wait the application to finish gracefully.")
+    await client.finalize()
+
+
+@pytest.mark.asyncio
 async def test_send_method(gql):
     """Test the low-level ``send`` method on the GraphQL client.
 
