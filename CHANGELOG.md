@@ -23,11 +23,34 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Changelog
 
+## [1.0.0rc10] - 2026-10-28 (baseapp-django-channels-graphql-ws)
+
+- Synced with upstream `psevensas/DjangoChannelsGraphqlWs`. The
+  fork-specific `graphql-transport-ws` patch is replaced by the upstream
+  implementation, which supports both `graphql-transport-ws` and
+  `graphql-ws`. The test client now uses `graphql-transport-ws` by
+  default.
+- Kept the fork features: `GraphqlWsConsumer.get_context()`,
+  `info.context.build_absolute_uri()`, Channels scope keys accessible
+  through `info.context`, `connect_and_init(payload=...)` and
+  `GraphqlWsClient.send()`.
+- `graphql-core` is now `>=3.2.13,<3.3`. It was pinned to `3.2.3`.
+- Django 6.x support (Python 3.12+). Python 3.10-3.13 are supported.
+- Fixed `asyncio` errors on Python 3.11+: `GraphqlWsTransport.connect`
+  passed a bare coroutine to `asyncio.wait`, and `asyncio.get_event_loop()`
+  is deprecated in `Subscription.broadcast`/`unsubscribe`.
+
+## [1.0.0rc7] - 2023-08-17
+
+- Supported the most recent WebSocket sub-protocol
+  `graphql-transport-ws` used by Apollo. See the specification:
+  https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md.
+
+
 ## [1.0.0rc6] - 2023-05-10
 
 - GraphQL parsing and message serialization now perform concurrently
   by `sync_to_async(...,thread_sensitive=False)`.
-
 
 ## [1.0.0rc5] - 2023-05-05
 
@@ -37,7 +60,6 @@ WARNING: Release contains backward incompatible changes!
   subscription resolver. Previously it was necessary to return special
   `SKIP` object which is no longer the case..
 - Python 3.8 compatibility brought back. Tests pass OK.
-
 
 ## [1.0.0rc4] - 2023-05-03
 
