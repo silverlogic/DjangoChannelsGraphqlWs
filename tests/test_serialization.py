@@ -24,7 +24,6 @@
 import datetime
 import random
 import sys
-import textwrap
 import uuid
 
 import channels
@@ -44,7 +43,10 @@ if sys.version_info < (3, 7):
 
 
 @pytest.mark.asyncio
-async def test_models_serialization_with_nested_db_query(gql, transactional_db):
+@pytest.mark.parametrize("subprotocol", ["graphql-transport-ws", "graphql-ws"])
+async def test_models_serialization_with_nested_db_query(
+    gql, transactional_db, subprotocol
+):
     """Test serialization with resolver that executes DB queries."""
     del transactional_db
 
@@ -119,25 +121,19 @@ async def test_models_serialization_with_nested_db_query(gql, transactional_db):
         mutation=Mutation,
         subscription=Subscription,
         consumer_attrs={"strict_ordering": True},
+        subprotocol=subprotocol,
     )
     await client.connect_and_init()
 
     print("Subscribe to receive subscription notifications.")
 
-    sub_id = await client.send(
-        msg_type="start",
-        payload={
-            "query": textwrap.dedent(
-                """
+    sub_id = await client.start(query="""
                 subscription {
                     on_models_received {
                         user { id, username }
                     }
                 }
-                """
-            )
-        },
-    )
+                """)
 
     print("Invoke mutation which sends Django model to the subscription.")
 
@@ -154,7 +150,8 @@ async def test_models_serialization_with_nested_db_query(gql, transactional_db):
 
 
 @pytest.mark.asyncio
-async def test_models_serialization(gql, transactional_db):
+@pytest.mark.parametrize("subprotocol", ["graphql-transport-ws", "graphql-ws"])
+async def test_models_serialization(gql, transactional_db, subprotocol):
     """Test serialization of the Django model inside the `payload`."""
     del transactional_db
 
@@ -228,16 +225,13 @@ async def test_models_serialization(gql, transactional_db):
         mutation=Mutation,
         subscription=Subscription,
         consumer_attrs={"strict_ordering": True},
+        subprotocol=subprotocol,
     )
     await client.connect_and_init()
 
     print("Subscribe to receive subscription notifications.")
 
-    sub_id = await client.send(
-        msg_type="start",
-        payload={
-            "query": textwrap.dedent(
-                """
+    sub_id = await client.start(query="""
                 subscription {
                     on_models_received {
                         user1_id
@@ -248,10 +242,7 @@ async def test_models_serialization(gql, transactional_db):
                         user2_typename
                     }
                 }
-                """
-            )
-        },
-    )
+                """)
 
     print("Invoke mutation which sends Django model to the subscription.")
 
@@ -272,7 +263,8 @@ async def test_models_serialization(gql, transactional_db):
 
 
 @pytest.mark.asyncio
-async def test_timestamps_serialization(gql, transactional_db):
+@pytest.mark.parametrize("subprotocol", ["graphql-transport-ws", "graphql-ws"])
+async def test_timestamps_serialization(gql, transactional_db, subprotocol):
     """Test serialization of timestamps inside the `payload`.
 
     Check that instances of `datetime.date`, `datetime.time`, and
@@ -345,16 +337,13 @@ async def test_timestamps_serialization(gql, transactional_db):
         mutation=Mutation,
         subscription=Subscription,
         consumer_attrs={"strict_ordering": True},
+        subprotocol=subprotocol,
     )
     await client.connect_and_init()
 
     print("Subscribe to receive subscription notifications.")
 
-    sub_id = await client.send(
-        msg_type="start",
-        payload={
-            "query": textwrap.dedent(
-                """
+    sub_id = await client.start(query="""
                 subscription {
                     on_timestamps_received {
                         now_date
@@ -365,10 +354,7 @@ async def test_timestamps_serialization(gql, transactional_db):
                         now_time_typename
                     }
                 }
-                """
-            )
-        },
-    )
+                """)
 
     print("Invoke mutation which sends timestamps to the subscription.")
 
