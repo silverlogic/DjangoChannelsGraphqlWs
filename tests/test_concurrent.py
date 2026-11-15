@@ -114,10 +114,12 @@ async def test_heavy_load(gql, sync_resolvers, requests_number, subprotocol):
     for _ in range(requests_number):
         op_id = uuid.uuid4().hex
         send_waitlist += [
-            client.start(
-                msg_id=op_id,
-                query=f"query op_name {{ {query} }}",
-                operation_name="op_name",
+            asyncio.create_task(
+                client.start(
+                    msg_id=op_id,
+                    query=f"query op_name {{ {query} }}",
+                    operation_name="op_name",
+                )
             )
         ]
         # Expect two messages for each one we have sent.
@@ -125,13 +127,14 @@ async def test_heavy_load(gql, sync_resolvers, requests_number, subprotocol):
             (op_id, "next" if subprotocol == "graphql-transport-ws" else "data")
         )
         expected_responses.add((op_id, "complete"))
-        receive_waitlist += [client.transport.receive(), client.transport.receive()]
+        receive_waitlist += [
+            asyncio.create_task(client.transport.receive()),
+            asyncio.create_task(client.transport.receive()),
+        ]
 
     start_ts = time.monotonic()
-    await asyncio.wait([asyncio.ensure_future(aw) for aw in send_waitlist])
-    responses, _ = await asyncio.wait(
-        [asyncio.ensure_future(aw) for aw in receive_waitlist]
-    )
+    await asyncio.wait(send_waitlist)
+    responses, _ = await asyncio.wait(receive_waitlist)
     time_spent = time.monotonic() - start_ts
     print(
         f"RPS: { (requests_number / time_spent) if time_spent != 0 else '∞'}"
@@ -338,10 +341,11 @@ async def test_subscribe_and_many_unsubscribes(
             if resp["type"] == "complete":
                 op_ids.remove(op_id)
             else:
+                expected_type = (
+                    "next" if subprotocol == "graphql-transport-ws" else "data"
+                )
                 assert (
-                    resp["type"] == "next"
-                    if subprotocol == "graphql-transport-ws"
-                    else "data" and resp["payload"]["data"] is None
+                    resp["type"] == expected_type and resp["payload"]["data"] is None
                 ), (
                     "This should be a successful subscription message, not '%s'",
                     resp,
@@ -364,21 +368,21 @@ async def test_subscribe_and_many_unsubscribes(
     op_ids: Set[str] = set()
     # List to collect tasks. We immediately add a handler to receive
     # successful messages.
-    awaitables = [receiver(op_ids)]
+    awaitables = [asyncio.create_task(receiver(op_ids))]
 
     op_id = 0
     for user_id in itertools.cycle(["ALICE", "TOM", None]):
         op_id += 1
         op_ids.add(str(op_id))
-        awaitables.append(subscribe_unsubscribe(client, user_id, str(op_id)))
+        awaitables.append(
+            asyncio.create_task(subscribe_unsubscribe(client, user_id, str(op_id)))
+        )
         if number_of_tasks == op_id:
             print("Tasks with the following ids prepared:", op_ids)
             break
 
     print("Let's run all the tasks concurrently.")
-    _, pending = await asyncio.wait(
-        [asyncio.ensure_future(aw) for aw in awaitables], timeout=wait_timeout
-    )
+    _, pending = await asyncio.wait(awaitables, timeout=wait_timeout)
 
     # Check that the server withstood the flow of subscribe-unsubscribe
     # messages and successfully responded to all messages.
@@ -493,10 +497,9 @@ async def test_message_order_in_subscribe_unsubscribe_loop(
 
         resp = await client.receive(raw_response=True)
         assert sub_id == resp["id"]
+        expected_type = "next" if subprotocol == "graphql-transport-ws" else "data"
         assert (
-            resp["type"] == "next"
-            if subprotocol == "graphql-transport-ws"
-            else "data" and resp["payload"]["data"] is None
+            resp["type"] == expected_type and resp["payload"]["data"] is None
         ), "First we expect to get a confirmation message!"
 
         resp = await client.receive(raw_response=True)
@@ -772,10 +775,9 @@ async def test_message_order_in_subscribe_unsubscribe_all_loop(
 
         resp = await client.receive(raw_response=True)
         assert sub_id == resp["id"]
+        expected_type = "next" if subprotocol == "graphql-transport-ws" else "data"
         assert (
-            resp["type"] == "next"
-            if subprotocol == "graphql-transport-ws"
-            else "data" and resp["payload"]["data"] is None
+            resp["type"] == expected_type and resp["payload"]["data"] is None
         ), "First we expect to get a confirmation message!"
 
         resp = await client.receive(raw_response=True)

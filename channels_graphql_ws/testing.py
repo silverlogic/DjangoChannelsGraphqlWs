@@ -66,13 +66,26 @@ class GraphqlWsClient(channels_graphql_ws.client.GraphqlWsClient):
                     else f"Message received when nothing expected!\n{received}"
                 )
 
-    async def send_raw_message(self, message):
+    async def connect_and_init(self, connect_only: bool = False, payload="") -> None:
+        """Establish and initialize WebSocket GraphQL connection.
+
+        1. Establish WebSocket connection.
+        2. Initialize GraphQL connection. Skipped if connect_only=True.
+        """
+        if connect_only:
+            await self._transport.connect(subprotocol=self._subprotocol)
+            self._is_connected = True
+        else:
+            await super().connect_and_init(payload=payload)
+
+    async def send_raw_message(self, message) -> Optional[str]:
         """Send a raw message.
 
         This can be useful for testing, for example, to check that the
         server responds appropriately to malformed messages.
         """
         await self._transport.send(message)
+        return message.get("id") if isinstance(message, dict) else None
 
     async def wait_disconnect(self, timeout=None, assert_code=None):
         """Wait server to close the connection.
@@ -145,8 +158,10 @@ class GraphqlWsTransport(channels_graphql_ws.transport.GraphqlWsTransport):
             **(communicator_kwds or {}),
         )
 
-    async def connect(self, timeout: Optional[float] = None) -> None:
+    async def connect(self, timeout: Optional[float] = None, subprotocol=None) -> None:
         """Connect to the server."""
+        # The subprotocol is already baked into the communicator at construction.
+        # pylint: disable=unused-argument
         ok, code = await self._comm.connect(timeout or self.TIMEOUT)
         if not ok:
             raise RuntimeError(

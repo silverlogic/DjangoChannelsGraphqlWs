@@ -35,7 +35,9 @@ class GraphqlWsTransport:
     # Default timeout for the WebSocket messages.
     TIMEOUT: float = 60.0
 
-    async def connect(self, timeout: Optional[float] = None) -> None:
+    async def connect(
+        self, timeout: Optional[float] = None, subprotocol: Optional[str] = None
+    ) -> None:
         """Connect to the server."""
         raise NotImplementedError()
 
@@ -93,18 +95,30 @@ class GraphqlWsTransportAiohttp(GraphqlWsTransport):
                 "graphql-ws". By default set to "graphql-transport-ws".
 
         """
-        assert subprotocol in (
+        if subprotocol not in (
             "graphql-transport-ws",
             "graphql-ws",
-        ), "Transport only supports graphql-transport-ws and graphql-ws subprotocols!"
+        ):
+            raise ValueError(
+                "Transport only supports graphql-transport-ws"
+                " and graphql-ws subprotocols!"
+            )
         connected = asyncio.Event()
         self._message_processor = asyncio.create_task(
             self._process_messages(connected, timeout or self.TIMEOUT, subprotocol)
         )
-        await asyncio.wait(
-            [asyncio.create_task(connected.wait()), self._message_processor],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
+        connected_task = asyncio.create_task(connected.wait())
+        try:
+            await asyncio.wait(
+                [connected_task, self._message_processor],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+        finally:
+            connected_task.cancel()
+            try:
+                await connected_task
+            except asyncio.CancelledError:
+                pass
         if self._message_processor.done():
             # Make sure to raise an exception from the task.
             self._message_processor.result()

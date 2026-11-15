@@ -23,22 +23,34 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Changelog
 
-## [1.0.0rc10] - 2026-10-28 (baseapp-django-channels-graphql-ws)
+## [1.0.0rc10] - Unreleased
 
-- Synced with upstream `psevensas/DjangoChannelsGraphqlWs`. The
-  fork-specific `graphql-transport-ws` patch is replaced by the upstream
-  implementation, which supports both `graphql-transport-ws` and
-  `graphql-ws`. The test client now uses `graphql-transport-ws` by
-  default.
-- Kept the fork features: `GraphqlWsConsumer.get_context()`,
-  `info.context.build_absolute_uri()`, Channels scope keys accessible
-  through `info.context`, `connect_and_init(payload=...)` and
-  `GraphqlWsClient.send()`.
 - `graphql-core` is now `>=3.2.13,<3.3`. It was pinned to `3.2.3`.
-- Django 6.x support (Python 3.12+). Python 3.10-3.13 are supported.
-- Fixed `asyncio` errors on Python 3.11+: `GraphqlWsTransport.connect`
-  passed a bare coroutine to `asyncio.wait`, and `asyncio.get_event_loop()`
-  is deprecated in `Subscription.broadcast`/`unsubscribe`.
+- Django 6.x support (Python 3.12+). The CI matrix now includes Python 3.13.
+- Fixed flakiness of `test_notification_queue_limit` on Python 3.13.
+- Added tests for the fork-specific features (`connect_and_init(payload=...)`,
+  `GraphqlWsClient.send()`, `info.context.build_absolute_uri()`).
+- Rebased with upstream `datadvance/DjangoChannelsGraphqlWs` (commit `1ade107`).
+- Updated GitHub Actions CI: Python matrix bumped to 3.10 / 3.11 / 3.12;
+  `actions/checkout` and `actions/setup-python` upgraded from v2 to v4;
+  macOS runner added to test matrix.
+- Fixed Python 3.10+ asyncio incompatibilities (event loop handling,
+  `asyncio.wait` coroutine usage).
+- Fixed vulnerable `aiohttp` and `django` versions in `poetry.lock`.
+- Post-rebase linting/formatting fixes (mypy, pylint, black 24.4.2).
+
+## [1.0.0rc9] - 2024-04-11
+
+- Package renamed to `baseapp-django-channels-graphql-ws` for PyPI distribution.
+- Python requirement bumped to `^3.10.0`.
+- Added Django 5 support: `Django = "^4 || ^5"`.
+
+## [1.0.0rc8] - 2024-07-18
+
+- Merged upstream changes from datadvance/DjangoChannelsGraphqlWs.
+- Dependency upgrades and build fixes.
+- Removed deprecated Pydocstyle.
+- Made Poetry use active Python for compatibility with Pyenv.
 
 ## [1.0.0rc7] - 2023-08-17
 

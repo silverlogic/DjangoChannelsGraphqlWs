@@ -126,7 +126,7 @@ attr-rgx = "[a-z_][a-z0-9_]{1,64}$"
 bad-names = "foo,bar,baz,toto,tutu,tata,responce,pathes"
 class-attribute-rgx = "([A-Za-z_][A-Za-z0-9_]{1,64}|(__.*__))$"
 function-rgx = "[a-z_][a-z0-9_]{1,64}$"
-good-names = "i,j,k,ex,Run,_"
+good-names = "i,j,k,ex,Run,_,META"
 method-rgx = "[a-z_][a-z0-9_]{1,64}$"
 # Docstrings are needed everywhere.
 no-docstring-rgx = "^$"
@@ -134,11 +134,6 @@ variable-rgx = "[a-z_][a-z0-9_]{1,64}$"
 [tool.pylint.FORMAT]
 max-line-length = "88"
 max-module-lines = "9000" # Right, over nine thousand!
-# Disabled together with Pylint-quotes (see above).
-# [tool.pylint.STRING_QUOTES]
-# docstring-quote = "double"
-# string-quote = "double-avoid-escape"
-# triple-quote = "double"
 [tool.pylint.PYLINT_DJANGO]
 # NOTE: When Pytest runs Pylint this setting is overwritten by the
 # environment variable `DJANGO_SETTINGS_MODULE` set by `pytest-django`.

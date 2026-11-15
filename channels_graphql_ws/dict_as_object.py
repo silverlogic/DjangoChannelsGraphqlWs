@@ -36,6 +36,7 @@ class DictAsObject:
     def __init__(self, scope):
         """Remember given `scope`."""
         self._scope = scope
+        self.META = {}
 
     def _asdict(self):
         """Provide inner Channels scope object."""
@@ -85,25 +86,24 @@ class DictAsObject:
         """Wrap dict method."""
         return self._scope.__repr__()
 
-    # ---------------------------------------------------- BUILD_ABSOLUTE_URI
-    # Copied from `django.http.request.HttpRequest`, so we can have
-    # `build_absolute_uri` on the Channels scope.
+    # ---------------------------- build_absolute_uri
+    # Copy from django.http.request.HttpRequest so we can have
+    # build_absolute_uri on channels scope.
 
     def build_meta(self):
-        """Build the `META` dict from the scope headers."""
+        """Build META dict from headers."""
         meta = {}
         for key, value in self.channels_scope.get("headers", []):
             meta[key.decode("utf-8").replace("-", "_").upper()] = value.decode("utf-8")
         meta["QUERY_STRING"] = self.channels_scope.get("query_string", b"").decode(
             "utf-8"
         )
-        # pylint: disable=invalid-name,attribute-defined-outside-init
         self.META = meta
 
     def build_absolute_uri(self, location=None):
-        """Build an absolute URI from the location and the scope.
-
-        If no ``location`` is specified, build the absolute URI
+        """
+        Build an absolute URI from the location and the variables available in
+        this request. If no ``location`` is specified, build the absolute URI
         using request.get_full_path(). If the location is absolute, convert it
         to an RFC 3987 compliant URI and return it. If location is relative or
         is scheme-relative (i.e., ``//example.com/``), urljoin() it to a base
@@ -140,26 +140,29 @@ class DictAsObject:
         return iri_to_uri(location)
 
     def get_full_path(self, force_append_slash=False):
-        """Return the path with the query string."""
+        """Return the full path including query string."""
         return self._get_full_path(self.path, force_append_slash)
 
     def _get_full_path(self, path, force_append_slash):
-        """Return the given path with the query string."""
-        # RFC 3986 requires query string arguments to be in the ASCII range.
-        # Rather than crash if this doesn't happen, we encode defensively.
-        slash = "/" if force_append_slash and not path.endswith("/") else ""
+        """Build the full path including optional slash and query string.
+
+        RFC 3986 requires query string arguments to be in the ASCII range.
+        Rather than crash if this doesn't happen, we encode defensively.
+        """
         query_string = self.META.get("QUERY_STRING", "")
-        query_string = f"?{iri_to_uri(query_string)}" if query_string else ""
-        return f"{escape_uri_path(path)}{slash}{query_string}"
+        slash = "/" if force_append_slash and not path.endswith("/") else ""
+        qs = f"?{iri_to_uri(query_string)}" if query_string else ""
+        return f"{escape_uri_path(path)}{slash}{qs}"
 
     def is_secure(self):
-        """Assume HTTPS unless in the DEBUG mode."""
+        """Return True if the request is secure (HTTPS)."""
         return not settings.DEBUG
 
     @cached_property
     def _current_scheme_host(self):
-        """Return the `scheme://host` prefix."""
-        return f"{'https' if self.is_secure() else 'http'}://{self.get_host()}"
+        """Return the current scheme and host as a string."""
+        scheme = "https" if self.is_secure() else "http"
+        return f"{scheme}://{self.get_host()}"
 
     def get_host(self):
         """Return the HTTP host using the environment or request headers."""
@@ -181,9 +184,9 @@ class DictAsObject:
         raise DisallowedHost(msg)
 
     def _get_raw_host(self):
-        """Return the HTTP host using the request headers.
-
-        Skip allowed hosts protection, so may return an insecure host.
+        """
+        Return the HTTP host using the environment or request headers. Skip
+        allowed hosts protection, so may return an insecure host.
         """
 
         # We try three options, in order of decreasing preference.
