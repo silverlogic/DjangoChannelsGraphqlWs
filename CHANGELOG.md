@@ -23,11 +23,41 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Changelog
 
+## [Unreleased]
+
+- Rebased with upstream `datadvance/DjangoChannelsGraphqlWs` (commit `1ade107`).
+- Updated GitHub Actions CI: Python matrix bumped to 3.10 / 3.11 / 3.12;
+  `actions/checkout` and `actions/setup-python` upgraded from v2 to v4;
+  macOS runner added to test matrix.
+- Fixed Python 3.10+ asyncio incompatibilities (event loop handling,
+  `asyncio.wait` coroutine usage).
+- Fixed vulnerable `aiohttp` and `django` versions in `poetry.lock`.
+- Post-rebase linting/formatting fixes (mypy, pylint, black 24.4.2).
+
+## [1.0.0rc9] - 2024-04-11
+
+- Package renamed to `baseapp-django-channels-graphql-ws` for PyPI distribution.
+- Python requirement bumped to `^3.10.0`.
+- Added Django 5 support: `Django = "^4 || ^5"`.
+
+## [1.0.0rc8] - 2024-07-18
+
+- Merged upstream changes from datadvance/DjangoChannelsGraphqlWs.
+- Dependency upgrades and build fixes.
+- Removed deprecated Pydocstyle.
+- Made Poetry use active Python for compatibility with Pyenv.
+
+## [1.0.0rc7] - 2023-08-17
+
+- Supported the most recent WebSocket sub-protocol
+  `graphql-transport-ws` used by Apollo. See the specification:
+  https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md.
+
+
 ## [1.0.0rc6] - 2023-05-10
 
 - GraphQL parsing and message serialization now perform concurrently
   by `sync_to_async(...,thread_sensitive=False)`.
-
 
 ## [1.0.0rc5] - 2023-05-05
 
@@ -37,7 +67,6 @@ WARNING: Release contains backward incompatible changes!
   subscription resolver. Previously it was necessary to return special
   `SKIP` object which is no longer the case..
 - Python 3.8 compatibility brought back. Tests pass OK.
-
 
 ## [1.0.0rc4] - 2023-05-03
 

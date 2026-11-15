@@ -35,27 +35,21 @@ import channels_graphql_ws
 import channels_graphql_ws.testing
 
 
-@pytest.fixture
-def event_loop(request):
-    """Overwrite `pytest_asyncio` eventloop to fix Windows issue.
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    """Return the asyncio event loop policy for tests.
 
-    Default implementation causes `NotImplementedError` on Windows with
-    Python 3.8, because they changed default eventloop in 3.8.
+    On Windows with Python 3.8+, use WindowsSelectorEventLoopPolicy to avoid
+    NotImplementedError: the default ProactorEventLoop is incompatible with
+    some libraries. On other platforms return the default policy.
 
     NOTE: We do the same thing in the `example/settings.py` because it
     imports (and fails) before we have a chance to invoke this fixture.
-    So, we could avoid adding this fixture, but I feel it is better to
-    keep the proper solution here as well.
 
     """
-    del request
-    if sys.platform == "win32" and sys.version_info.minor >= 8:
-        asyncio.set_event_loop_policy(
-            asyncio.WindowsSelectorEventLoopPolicy()  # pylint: disable=no-member
-        )
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+    if sys.platform == "win32":
+        return asyncio.WindowsSelectorEventLoopPolicy()  # pylint: disable=no-member
+    return asyncio.DefaultEventLoopPolicy()
 
 
 class DummyQuery(graphene.ObjectType):
@@ -96,7 +90,8 @@ def gql(db, request):
             mutation=None,
             subscription=None,
             consumer_attrs=None,
-            communicator_kwds=None
+            communicator_kwds=None,
+            subprotocol="graphql-transport-ws",
         ):
 
     Args:
@@ -106,6 +101,9 @@ def gql(db, request):
         consumer_attrs: `GraphqlWsConsumer` attributes dict. Optional.
         communicator_kwds: Extra keyword arguments for the Channels
             `channels.testing.WebsocketCommunicator`. Optional.
+        subprotocol: WebSocket subprotocol to use by the Client. Can
+            have a value of "graphql-transport-ws" or "graphql-ws".
+            By default set to "graphql-transport-ws".
 
     Returns:
         An instance of the `GraphqlWsClient` class which has many
@@ -123,7 +121,9 @@ def gql(db, request):
             # `GraphqlWsConsumer` settings.
             consumer_attrs={"strict_ordering": True},
             # `channels.testing.WebsocketCommunicator` settings.
-            communicator_kwds={"headers": [...]}
+            communicator_kwds={"headers": [...]},
+            # Subprotocol to test.
+            subprotocol="graphql-ws"
         )
         ...
     ```
@@ -143,6 +143,7 @@ def gql(db, request):
         subscription=None,
         consumer_attrs=None,
         communicator_kwds=None,
+        subprotocol="graphql-transport-ws",
     ):
         """Setup GraphQL consumer and the communicator for tests."""
         # Graphene will throw a exception from the `graphene.Schema`
@@ -185,9 +186,12 @@ def gql(db, request):
             application=application,
             path="graphql/",
             communicator_kwds=communicator_kwds,
+            subprotocol=subprotocol,
         )
 
-        client = channels_graphql_ws.testing.GraphqlWsClient(transport)
+        client = channels_graphql_ws.testing.GraphqlWsClient(
+            transport, subprotocol=subprotocol
+        )
         issued_clients.append(client)
         return client
 

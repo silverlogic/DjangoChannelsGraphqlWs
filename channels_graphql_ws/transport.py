@@ -28,8 +28,6 @@ from typing import Optional
 
 import aiohttp
 
-from . import graphql_ws_consumer
-
 
 class GraphqlWsTransport:
     """Transport interface for the `GraphqlWsClient`."""
@@ -37,7 +35,9 @@ class GraphqlWsTransport:
     # Default timeout for the WebSocket messages.
     TIMEOUT: float = 60.0
 
-    async def connect(self, timeout: Optional[float] = None) -> None:
+    async def connect(
+        self, timeout: Optional[float] = None, subprotocol: Optional[str] = None
+    ) -> None:
         """Connect to the server."""
         raise NotImplementedError()
 
@@ -53,7 +53,7 @@ class GraphqlWsTransport:
         """Disconnect from the server."""
         raise NotImplementedError()
 
-    async def wait_disconnect(self, timeout: Optional[float] = None) -> None:
+    async def wait_disconnect(self, timeout: Optional[float] = None) -> dict:
         """Wait server to close the connection."""
         raise NotImplementedError()
 
@@ -83,22 +83,42 @@ class GraphqlWsTransportAiohttp(GraphqlWsTransport):
         # A queue for incoming messages.
         self._incoming_messages: asyncio.Queue = asyncio.Queue()
 
-    async def connect(self, timeout: Optional[float] = None) -> None:
+    async def connect(
+        self, timeout: Optional[float] = None, subprotocol="graphql-transport-ws"
+    ) -> None:
         """Establish a connection with the WebSocket server.
 
-        Returns:
-            `(True, <chosen-subprotocol>)` if connection accepted.
-            `(False, None)` if connection rejected.
+        Args:
+            timeout: Connection timeout in seconds.
+            subprotocol: WebSocket subprotocol to use by the Transport.
+                Can have a value of "graphql-transport-ws" or
+                "graphql-ws". By default set to "graphql-transport-ws".
 
         """
+        if subprotocol not in (
+            "graphql-transport-ws",
+            "graphql-ws",
+        ):
+            raise ValueError(
+                "Transport only supports graphql-transport-ws"
+                " and graphql-ws subprotocols!"
+            )
         connected = asyncio.Event()
         self._message_processor = asyncio.create_task(
-            self._process_messages(connected, timeout or self.TIMEOUT)
+            self._process_messages(connected, timeout or self.TIMEOUT, subprotocol)
         )
-        await asyncio.wait(
-            [connected.wait(), self._message_processor],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
+        connected_task = asyncio.create_task(connected.wait())
+        try:
+            await asyncio.wait(
+                [connected_task, self._message_processor],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+        finally:
+            connected_task.cancel()
+            try:
+                await connected_task
+            except asyncio.CancelledError:
+                pass
         if self._message_processor.done():
             # Make sure to raise an exception from the task.
             self._message_processor.result()
@@ -153,11 +173,11 @@ class GraphqlWsTransportAiohttp(GraphqlWsTransport):
                 except asyncio.CancelledError:
                     pass
 
-    async def wait_disconnect(self, timeout: Optional[float] = None) -> None:
+    async def wait_disconnect(self, timeout: Optional[float] = None) -> dict:
         """Wait server to close the connection."""
         raise NotImplementedError()
 
-    async def _process_messages(self, connected, timeout):
+    async def _process_messages(self, connected, timeout, subprotocol):
         """Process messages coming from the connection.
 
         Args:
@@ -169,14 +189,11 @@ class GraphqlWsTransportAiohttp(GraphqlWsTransport):
         async with session as session:
             connection = session.ws_connect(
                 self._url,
-                protocols=[graphql_ws_consumer.GRAPHQL_WS_SUBPROTOCOL, graphql_ws_consumer.TRANSPORT_WS_SUBPROTOCOL],
+                protocols=[subprotocol],
                 timeout=timeout,
             )
             async with connection as self._connection:
-                if (
-                    self._connection.protocol
-                    not in [graphql_ws_consumer.GRAPHQL_WS_SUBPROTOCOL, graphql_ws_consumer.TRANSPORT_WS_SUBPROTOCOL]
-                ):
+                if self._connection.protocol != subprotocol:
                     raise RuntimeError(
                         f"Server uses wrong subprotocol: {self._connection.protocol}!"
                     )
