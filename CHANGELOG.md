@@ -23,8 +23,20 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Changelog
 
-## [Unreleased]
+## [1.0.0rc10] - Unreleased
 
+- Supports GraphQL-core 3.3: `graphql-core` is now `>=3.2.13,<3.4`. It was
+  pinned to `3.2.3`. On 3.3, subscriptions use `graphql.subscribe`, which
+  supports middlewares natively. The 3.2 code path is kept.
+- `graphene` is installed from our maintained fork
+  (https://github.com/silverlogic/graphene), which supports GraphQL-core 3.3
+  and depends on our graphql-relay fork
+  (https://github.com/silverlogic/graphql-relay-py). Upstream graphene is
+  unmaintained.
+- Django 6.x support (Python 3.12+). The CI matrix now includes Python 3.13.
+- Fixed flakiness of `test_notification_queue_limit` on Python 3.13.
+- Added tests for the fork-specific features (`connect_and_init(payload=...)`,
+  `GraphqlWsClient.send()`, `info.context.build_absolute_uri()`).
 - Rebased with upstream `datadvance/DjangoChannelsGraphqlWs` (commit `1ade107`).
 - Updated GitHub Actions CI: Python matrix bumped to 3.10 / 3.11 / 3.12;
   `actions/checkout` and `actions/setup-python` upgraded from v2 to v4;

@@ -237,7 +237,7 @@ def synchronize_inmemory_channel_layer():
 
         else:
 
-            def wrapper(*args, **kwds):
+            def wrapper(*args, **kwds):  # type: ignore[misc]
                 with guard:
                     return func(*args, **kwds)
 

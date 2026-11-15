@@ -53,11 +53,16 @@ async def test_notification_queue_limit(gql, subprotocol):
         is_ok = graphene.Boolean()
 
         @staticmethod
-        def mutate(root, info):
-            """Broadcast many messages."""
+        async def mutate(root, info):
+            """Broadcast many messages.
+
+            Await each broadcast to deliver them in order: broadcasts
+            spawned from the event loop thread run as concurrent tasks
+            and may reach the subscription in any order.
+            """
             del root, info
             for idx in range(msgs_count):
-                OnNewMessage.broadcast(payload={"message": idx})
+                await OnNewMessage.broadcast(payload={"message": idx})
             return SendMessages(is_ok=True)
 
     class OnNewMessage(channels_graphql_ws.Subscription):

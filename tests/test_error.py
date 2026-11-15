@@ -58,13 +58,11 @@ async def test_syntax_error(gql, subprotocol):
         await client.receive_complete(msg_id)
 
     print("Check multiple errors in the `data` message.")
-    msg_id = await client.start(
-        query="""
+    msg_id = await client.start(query="""
                 query { projects { path wrong_field } }
                 query a { projects }
                 { wrong_name }
-                """
-    )
+                """)
     errors, data = await client.receive_error(msg_id)
     assert data is None
     assert len(errors) == 5, f"Five errors expected, but {len(errors)} errors received!"
@@ -314,11 +312,9 @@ async def test_subscribe_return_value(gql, subprotocol):
     for result_type in ["NONE", "LIST", "TUPLE"]:
         client = gql(subscription=Subscription, subprotocol=subprotocol)
         await client.connect_and_init()
-        await client.start(
-            query=f"""
+        await client.start(query=f"""
                 subscription {{ test_subscription (switch: "{result_type}") {{ ok }} }}
-                """
-        )
+                """)
         await client.assert_no_messages("Subscribe responded with a message!")
         await client.finalize()
 
@@ -327,11 +323,9 @@ async def test_subscribe_return_value(gql, subprotocol):
     for result_type in ["STR", "DICT", "EMPTYSTR"]:
         client = gql(subscription=Subscription, subprotocol=subprotocol)
         await client.connect_and_init()
-        msg_id = await client.start(
-            query=f"""
+        msg_id = await client.start(query=f"""
                 subscription {{ test_subscription (switch: "{result_type}") {{ ok }} }}
-                """
-        )
+                """)
         errors, _ = await client.receive_error(msg_id)
         assert "AssertionError" in errors[0]["message"], (
             "There is no error in response"

@@ -77,7 +77,7 @@ class GraphqlWsTransportAiohttp(GraphqlWsTransport):
         # HTTP headers.
         self._headers = headers
         # AIOHTTP connection.
-        self._connection: aiohttp.ClientWebSocketResponse
+        self._connection: "aiohttp.ClientWebSocketResponse[bool]"
         # A task which processes incoming messages.
         self._message_processor: asyncio.Task
         # A queue for incoming messages.

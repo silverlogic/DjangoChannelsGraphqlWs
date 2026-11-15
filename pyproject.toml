@@ -34,7 +34,7 @@ build-backend = "poetry.core.masonry.api"
 # Docs: https://python-poetry.org/docs/
 [tool.poetry]
 name = "baseapp-django-channels-graphql-ws"
-version = "v1.0.0rc9"
+version = "v1.0.0rc10"
 description = """Django Channels based WebSocket GraphQL server with Graphene-like subscriptions"""
 authors = ["Alexander A. Prokhorov <alexander.prokhorov@datadvance.net>"]
 homepage = "https://github.com/datadvance/DjangoChannelsGraphqlWs"
@@ -49,9 +49,15 @@ python = "^3.10.0"
 aiohttp = "^3"
 asgiref = "^3"
 channels = "^4"
-Django = "^4 || ^5"
-graphene = "^3"
-graphql-core = "3.2.3" # Carefully test after upgrade, since we path private internals.
+# Django 6 requires Python 3.12+.
+Django = [
+    { version = ">=4.2,<6", python = "<3.12" },
+    { version = ">=4.2,<7", python = ">=3.12" },
+]
+# Our maintained fork (upstream is unmaintained). It supports graphql-core
+# 3.3 and depends on our graphql-relay fork.
+graphene = { git = "https://github.com/silverlogic/graphene.git", rev = "88e5a7dd6a85c6241a06d2bf208ca187607eff37" }
+graphql-core = ">=3.2.13,<3.4" # Carefully test after upgrade, since we path private internals.
 msgpack = "^1"
 
 # Development dependencies.
@@ -80,7 +86,7 @@ tox = "*"
 # Black - the uncompromising code formatter.
 # https://black.readthedocs.io/en/stable/index.html
 [tool.black]
-target-version = ['py310', 'py311', 'py312']
+target-version = ['py310', 'py311', 'py312', 'py313']
 
 # ---------------------------------------------------------------- ISORT
 # Isort configuration.
@@ -162,7 +168,7 @@ omit = ["**/test_*.py"]
 legacy_tox_ini = """
 [tox]
 isolated_build = true
-envlist = py310,py311,py312
+envlist = py310,py311,py312,py313
 [testenv]
 allowlist_externals = poetry
 commands_pre = poetry install -v
