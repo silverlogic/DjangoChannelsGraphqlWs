@@ -1533,20 +1533,24 @@ description = "GraphQL Framework for Python"
 optional = false
 python-versions = "*"
 groups = ["main", "dev"]
-files = [
-    {file = "graphene-3.4.3-py2.py3-none-any.whl", hash = "sha256:820db6289754c181007a150db1f7fff544b94142b556d12e3ebc777a7bf36c71"},
-    {file = "graphene-3.4.3.tar.gz", hash = "sha256:2a3786948ce75fe7e078443d37f609cbe5bb36ad8d6b828740ad3b95ed1a0aaa"},
-]
+files = []
+develop = false
 
 [package.dependencies]
-graphql-core = ">=3.1,<3.3"
-graphql-relay = ">=3.1,<3.3"
+graphql-core = ">=3.1,<3.4"
+graphql-relay = {git = "https://github.com/silverlogic/graphql-relay-py.git", rev = "12f067ab63c28e2a60208fe739cca730d88a1e62"}
 python-dateutil = ">=2.7.0,<3"
 typing-extensions = ">=4.7.1,<5"
 
 [package.extras]
 dev = ["coveralls (>=3.3,<5)", "mypy (>=1.10,<2)", "pytest (>=8,<9)", "pytest-asyncio (>=0.16,<2)", "pytest-benchmark (>=4,<5)", "pytest-cov (>=5,<6)", "pytest-mock (>=3,<4)", "ruff (==0.5.0)", "types-python-dateutil (>=2.8.1,<3)"]
 test = ["coveralls (>=3.3,<5)", "pytest (>=8,<9)", "pytest-asyncio (>=0.16,<2)", "pytest-benchmark (>=4,<5)", "pytest-cov (>=5,<6)", "pytest-mock (>=3,<4)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/silverlogic/graphene.git"
+reference = "88e5a7dd6a85c6241a06d2bf208ca187607eff37"
+resolved_reference = "88e5a7dd6a85c6241a06d2bf208ca187607eff37"
 
 [[package]]
 name = "graphene-django"
@@ -1575,14 +1579,14 @@ test = ["coveralls", "django-filter (>=22.1)", "djangorestframework (>=3.6.3)", 
 
 [[package]]
 name = "graphql-core"
-version = "3.2.14"
-description = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
+version = "3.3.2"
+description = "GraphQL-core is a Python port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 optional = false
-python-versions = "<4,>=3.7"
+python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "graphql_core-3.2.14-py3-none-any.whl", hash = "sha256:fb0eaaad81c558325f037a79dab7c6dd568cd17196030fb5c46fc4996948cc42"},
-    {file = "graphql_core-3.2.14.tar.gz", hash = "sha256:efec124d951f2997e8f28bb9f056d0a3b4b11dce720e2225723ec20fac570af5"},
+    {file = "graphql_core-3.3.2-py3-none-any.whl", hash = "sha256:d83f49ee18d2db89fb575dab6ffefa8aa1bf5f60dff8a6781db6f63420041348"},
+    {file = "graphql_core-3.3.2.tar.gz", hash = "sha256:15d6eee7d4364fbc202833bc6bd0d504004d8ae7c0aaf620fa884d8e437622f2"},
 ]
 
 [[package]]
@@ -1590,15 +1594,19 @@ name = "graphql-relay"
 version = "3.2.0"
 description = "Relay library for graphql-core"
 optional = false
-python-versions = ">=3.6,<4"
+python-versions = "^3.6"
 groups = ["main", "dev"]
-files = [
-    {file = "graphql-relay-3.2.0.tar.gz", hash = "sha256:1ff1c51298356e481a0be009ccdff249832ce53f30559c1338f22a0e0d17250c"},
-    {file = "graphql_relay-3.2.0-py3-none-any.whl", hash = "sha256:c9b22bd28b170ba1fe674c74384a8ff30a76c8e26f88ac3aa1584dd3179953e5"},
-]
+files = []
+develop = false
 
 [package.dependencies]
-graphql-core = ">=3.2,<3.3"
+graphql-core = ">=3.2,<3.4"
+
+[package.source]
+type = "git"
+url = "https://github.com/silverlogic/graphql-relay-py.git"
+reference = "12f067ab63c28e2a60208fe739cca730d88a1e62"
+resolved_reference = "12f067ab63c28e2a60208fe739cca730d88a1e62"
 
 [[package]]
 name = "hyperlink"
@@ -3853,4 +3861,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10.0"
-content-hash = "1e115953f5a274fd039bf0a4081e5604cc9b2caeef6ada51ff1e1c8402fecea3"
+content-hash = "5f2fb0ac17336c5f433bdb5c9e2e787ceded86a9f90c494dfb03ff8c2529cfc2"

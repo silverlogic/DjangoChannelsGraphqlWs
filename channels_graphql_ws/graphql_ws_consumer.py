@@ -55,6 +55,7 @@ import traceback
 import weakref
 from typing import (
     Any,
+    AsyncIterable,
     AsyncIterator,
     Awaitable,
     Callable,
@@ -82,6 +83,38 @@ from .serializer import Serializer
 
 # Module logger.
 LOG = logging.getLogger(__name__)
+
+# GraphQL-core 3.3 reworked the execution internals we rely on.
+_GRAPHQL_CORE_3_3 = graphql.version_info >= (3, 3)
+
+
+def _drop_skipped_subscription_fields(
+    result: graphql.ExecutionResult,
+) -> graphql.ExecutionResult:
+    """Skip notification if subscription returned `None`."""
+    if not result.errors and result.data:
+        for key in list(result.data.keys()):
+            if result.data[key] is None:
+                result.data.pop(key)
+    return result
+
+
+async def _map_async_iterator(
+    source: AsyncIterable[Any], mapper: Callable[[Any], Any]
+) -> AsyncIterator[graphql.ExecutionResult]:
+    """Map every item of the async iterator `source` with `mapper`.
+
+    Replaces `graphql.MapAsyncIterator` removed in GraphQL-core 3.3.
+    The `mapper` can be either sync or async function.
+    """
+    try:
+        async for item in source:
+            result = mapper(item)
+            yield await result if inspect.isawaitable(result) else result
+    finally:
+        aclose = getattr(source, "aclose", None)
+        if aclose is not None:
+            await aclose()
 
 
 class GraphqlWsConsumer(ch_websocket.AsyncJsonWebsocketConsumer):
@@ -990,20 +1023,48 @@ class GraphqlWsConsumer(ch_websocket.AsyncJsonWebsocketConsumer):
         field_resolver: Optional[graphql.GraphQLFieldResolver] = None,
         subscribe_field_resolver: Optional[graphql.GraphQLFieldResolver] = None,
         middleware: graphql.Middleware = None,
-        execution_context_class: Optional[Type[graphql.ExecutionContext]] = None,
+        execution_context_class: Optional[Type[Any]] = None,
     ) -> Union[AsyncIterator[graphql.ExecutionResult], graphql.ExecutionResult]:
         """Create a GraphQL subscription.
 
-        This is a copy of `graphql.execution.subscribe.subscribe` from
-        the GraphQL-core library v3.2.3 improved to support middlewares
-        and user defined execution_context_class.
+        With GraphQL-core 3.2 this is a copy of
+        `graphql.execution.subscribe.subscribe` from v3.2.3 improved to
+        support middlewares and user defined execution_context_class.
+        GraphQL-core 3.3 supports middlewares in `graphql.subscribe`
+        natively, so it is used directly (`execution_context_class` is
+        passed as `executor_class` there).
 
         This is a part of SUBSCRIBE/START message processing routine so
         the name prefixed with `_on_gql_subscribe__` to make this
         explicit.
         """
 
-        result_or_stream = await graphql.create_source_event_stream(
+        if _GRAPHQL_CORE_3_3:
+            # Typed as `Any` since its signature depends on the version.
+            graphql_subscribe: Any = graphql.subscribe
+            # pylint: disable-next=unexpected-keyword-arg
+            subscription: Any = graphql_subscribe(
+                self.schema.graphql_schema,
+                document,
+                root_value,
+                context_value,
+                variable_values,
+                operation_name,
+                field_resolver,
+                subscribe_field_resolver=subscribe_field_resolver,
+                middleware=middleware,
+                executor_class=execution_context_class,
+            )
+            if inspect.isawaitable(subscription):
+                subscription = await subscription
+            if isinstance(subscription, graphql.ExecutionResult):
+                return subscription
+            return _map_async_iterator(subscription, _drop_skipped_subscription_fields)
+
+        # NOTE: GraphQL-core 3.2 API, so typed as `Any` for 3.3.
+        create_source_event_stream: Any = graphql.create_source_event_stream
+        # pylint: disable-next=too-many-function-args
+        result_or_stream = await create_source_event_stream(
             self.schema.graphql_schema,
             document,
             root_value,
@@ -1039,16 +1100,12 @@ class GraphqlWsConsumer(ch_websocket.AsyncJsonWebsocketConsumer):
                 execution_context_class=execution_context_class,
             )  # type: ignore
             result = await result if inspect.isawaitable(result) else result
-            result = cast(graphql.ExecutionResult, result)
-            # Skip notification if subscription returned `None`.
-            if not result.errors and result.data:
-                for key in list(result.data.keys()):
-                    if result.data[key] is None:
-                        result.data.pop(key)
-            return result
+            return _drop_skipped_subscription_fields(
+                cast(graphql.ExecutionResult, result)
+            )
 
         # Map every source value to a ExecutionResult value.
-        return graphql.MapAsyncIterator(result_or_stream, map_source_to_response)
+        return _map_async_iterator(result_or_stream, map_source_to_response)
 
     async def _on_gql_subscribe__initialize_subscription_stream(
         self,

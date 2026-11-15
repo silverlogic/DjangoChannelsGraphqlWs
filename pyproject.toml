@@ -54,8 +54,10 @@ Django = [
     { version = ">=4.2,<6", python = "<3.12" },
     { version = ">=4.2,<7", python = ">=3.12" },
 ]
-graphene = "^3"
-graphql-core = ">=3.2.13,<3.3" # Carefully test after upgrade, since we path private internals.
+# Our maintained fork (upstream is unmaintained). It supports graphql-core
+# 3.3 and depends on our graphql-relay fork.
+graphene = { git = "https://github.com/silverlogic/graphene.git", rev = "88e5a7dd6a85c6241a06d2bf208ca187607eff37" }
+graphql-core = ">=3.2.13,<3.4" # Carefully test after upgrade, since we path private internals.
 msgpack = "^1"
 
 # Development dependencies.
